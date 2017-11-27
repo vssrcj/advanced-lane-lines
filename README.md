@@ -176,14 +176,14 @@ The area between the polynomials are simply colored in.  This area is then trans
 
 Firstly, the camera needs to be calibrated once.
 Once done, the image (frame) goes through the following pipeline.
-* 1. Undistort the image.
-* 2. Warp the image.
-* 3. Combine the color space, gradient threshold, and cleanup results for a binary image.
-* 4. If it is the first image, perform the `get_sliding_windows` function.
-* 5. Else, perform the `get_next_sliding_windows` function.
-* 6. Smooth the result, by using 75% of the previous polynomial and curvature, and 25% of the newly detected ones.
-* 7. Sanitize the result, by checking if the distance between the two polynomials are too narrow.  If so, perform the initial `get_sliding_windows` function again.
-* 8. Fill the area.
+1. Undistort the image.
+2. Warp the image.
+3. Combine the color space, gradient threshold, and cleanup results for a binary image.
+4. If it is the first image, perform the `get_sliding_windows` function.
+5. Else, perform the `get_next_sliding_windows` function.
+6. Smooth the result, by using 75% of the previous polynomial and curvature, and 25% of the newly detected ones.
+7. Sanitize the result, by checking if the distance between the two polynomials are too narrow.  If so, perform the initial `get_sliding_windows` function again.
+8. Fill the area.
 
 ## The result.
 The area between the lines are successfully colored in for the whole video: 
