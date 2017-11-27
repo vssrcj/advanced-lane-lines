@@ -185,7 +185,7 @@ Once done, the image (frame) goes through the following pipeline.
 ## The result.
 The area between the lines are successfully colored in for the whole video:
 
-![Final Result Gif](./result-gif.gif)
+![Final Result Gif](./result.gif)
 
 The radius of the curvature of the road varies between 500m and 1000m for the turns, and >8000m for the straights, which seems acceptable.
 
