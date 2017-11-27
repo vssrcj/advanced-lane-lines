@@ -1,20 +1,11 @@
-## Advanced Lane Finding
+# Advanced Lane Finding
+
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
+*made by [CJ](https://github.com/vssrcj)*
 
-In this project, your goal is to write a software pipeline to identify the lane boundaries in a video, but the main output or product we want you to create is a detailed writeup of the project.  Check out the [writeup template](https://github.com/udacity/CarND-Advanced-Lane-Lines/blob/master/writeup_template.md) for this project and use it as a starting point for creating your own writeup.  
-
-Creating a great writeup:
+Overview
 ---
-A great writeup should include the rubric points as well as your description of how you addressed each point.  You should include a detailed description of the code used in each step (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
-
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup.
-
-The Project
----
-
 The goals / steps of this project are the following:
 
 * Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
@@ -26,14 +17,145 @@ The goals / steps of this project are the following:
 * Warp the detected lane boundaries back onto the original image.
 * Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
 
-The images for camera calibration are stored in the folder called `camera_cal`.  The images in `test_images` are for testing your pipeline on single frames.  If you want to extract more test images from the videos, you can simply use an image writing method like `cv2.imwrite()`, i.e., you can read the video in frame by frame as usual, and for frames you want to save for later you can write to an image file.  
+---
+### Camera calibration.
 
-To help the reviewer examine your work, please save examples of the output from each stage of your pipeline in the folder called `ouput_images`, and include a description in your writeup for the project of what each image shows.    The video called `project_video.mp4` is the video your pipeline should work well on.  
+20 images of a chessboard were given in order to calibrate the camera.
 
-The `challenge_video.mp4` video is an extra (and optional) challenge for you if you want to test your pipeline under somewhat trickier conditions.  The `harder_challenge.mp4` video is another optional challenge and is brutal!
+This is done by finding the (9x6) corners of the chessboard, like so:
+<div>
+    <img src="/plots/calibration.png" height="400">
+</div>
 
-If you're feeling ambitious (again, totally optional though), don't stop there!  We encourage you to go out and take video of your own, calibrate your camera and show us how you would implement this project from scratch!
+You use the collection of all of the corners to calibrate the camera, in order to undistort the image, using:
+```python
+   cv2.calibrateCamera(objpoints, imgpoints, img_size, None, None)
+```
+where *imgpoints* is the collection of the chessboard corners
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+### Undistortion.
 
+You can undistort an image, using:
+```python
+   cv2.undistort(img, mtx, dist, None, mtx)
+```
+with the result:
+<div>
+    <img src="/plots/undistort.png" height="400">
+</div>
+
+## Warp image.
+
+The next step is to warp the image.  This is in order to view the image from the top.
+*3D image to 2D image.
+
+You do this by warping the image by mapping a trapezoid area to a square area using the following points:
+| Source        | Destination   | 
+|:-------------:|:-------------:| 
+| 570 , 480     | 300, 300        | 
+| 780 , 480     | 980, 300      |
+| 250 , 720     | 300, 720      |
+| 1130, 270     | 980, 720        |
+<div>
+    <img src="/plots/warped.png" height="400">
+</div>
+
+## Processing image.
+The warped image is processed into a binary image that indicates the lane lines.
+This is done by the following processes.
+
+### 1. Gradient thresholds.
+Various gradient threshold methods are used:
+<div>
+    <img src="/plots/gradient-thresholds.png" height="400">
+</div>
+The best result is retrieved where the *x-derivate* and the *y-derivate* intersects,
+or the *magnitude* and the *direction* intersects.
+
+### 2. Color spaces.
+Different color spaces are used to isolate the desired channels:
+*RGB*
+<div>
+    <img src="/plots/rgb.png" height="400">
+</div>
+*HLS*
+<div>
+    <img src="/plots/hls.png" height="400">
+</div>
+*HSV*
+<div>
+    <img src="/plots/hsv.png" height="400">
+</div>
+The best result is retrieved where *red* and *green* intersects, or the *saturation* and the *hue* intersects:
+<div>
+    <img src="/plots/color-combine.png" height="400">
+</div>
+
+### 3. Combination
+A binary image is generated by combining the gradient threshold result with the color space result:
+<div>
+    <img src="/plots/combine.png" height="400">
+</div>
+
+### 4. Clean up image.
+Finally, the image is cleaned up - all the small dots on the image are removed.  This is done for the next step, in order to better predict where the most pixels on the image lie.
+<div>
+    <img src="/plots/binary.png" height="400">
+</div>
+
+## Finding lane lines.
+This histogram shows where the most amount of pixels lie in the image (which most likely corresponds to the lines):
+<div>
+    <img src="/plots/histogram.png" height="400">
+</div>
+
+### Sliding windows.
+The image is divided into vertical slices.  Windows move in theses slices horizontally, and check if there are enough image points.  If there are, a box surrounds it:
+<div>
+    <img src="/plots/windows.png" height="400">
+</div>
+Two polynomials that connect the boxes are generated.  This correlates to the lane lines.
+It is then easy to get the radii of curvature from the polynomials.
+
+
+#### Subsequent images:
+When a new image needs to be processed in order to detect the lines, it does so by looking for the lines within 100px of the previous polynomials.
+<div>
+    <img src="/plots/next-windows.png" height="400">
+</div>
+
+
+### Curvature and offset from center.
+The polynomials retreived by the sliding windows are mapped to a real world space.
+
+The distance from the center of the image, is the distance from the mean of the beggining of the 2 lines.
+
+### Fill area.
+The area between the polynomials are simply colored in.  This area is then transposed onto the original image.  The curvature of the road, as well as the offset from center are also added to the image.
+
+## Pipeline.
+
+Firstly, the camera needs to be calibrated once.
+Once done, the image (frame) goes through the following pipeline.
+* 1. Undistort the image.
+* 2. Warp the image.
+* 3. Combine the color space, gradient threshold, and cleanup results for a binary image.
+* 4. If it is the first image, perform the `get_sliding_windows` function.
+* 5. Else, perform the `get_next_sliding_windows` function.
+* 6. Smooth the result, by using 75% of the previous polynomial and curvature, and 25% of the newly detected ones.
+* 7. Sanitize the result, by checking if the distance between the two polynomials are too narrow.  If so, perform the initial `get_sliding_windows` function again.
+* 8. Fill the area.
+
+## The result.
+The area between the lines are successfully colored in: <a href="/result.mp4">video.mp4</a>.
+
+The curvature of the road varies between 500m for the turns, to > 8000m for the straights, which seems acceptable.
+
+The distance from the offset is always smalller than 0.5, which seems in bounds.
+
+
+## Discussion.
+### Problems.
+* When the camera is mounted differently (different location or angle), then this won't work.
+* If the binary lines don't have a spike in the histogram to indicate the lines, then a polynomial fitting line can't be found.  *(the image cleanup helps with this)*
+* When the initial process doesn't return good predictions, it is difficult to find good subsequent averages.
