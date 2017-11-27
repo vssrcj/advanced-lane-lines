@@ -4,6 +4,9 @@
 
 *made by [CJ](https://github.com/vssrcj)*
 
+---
+![Final Result Gif](./result.gif)
+---
 Overview
 ---
 The goals / steps of this project are the following:
@@ -183,9 +186,9 @@ Once done, the image (frame) goes through the following pipeline.
 * 8. Fill the area.
 
 ## The result.
-The area between the lines are successfully colored in for the whole video:
+The area between the lines are successfully colored in for the whole video: 
 
-![Final Result Gif](./result.gif)
+<a href="/result.mp4">video.mp4</a>.
 
 The radius of the curvature of the road varies between 500m and 1000m for the turns, and >8000m for the straights, which seems acceptable.
 
